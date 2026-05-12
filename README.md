@@ -2,87 +2,68 @@
 
 # ShegerPay Kotlin SDK
 
-Official Kotlin SDK for [ShegerPay](https://shegerpay.com) — Ethiopian payment verification.
+[![Version](https://img.shields.io/badge/version-2.2.0-blue)](https://search.maven.org/artifact/com.shegerpay/sdk-kotlin)
+[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-## Installation
+Official Kotlin SDK for ShegerPay — verify Ethiopian bank payments (CBE, Telebirr, BOA, Awash).
 
-Add the dependency to your `build.gradle.kts`:
+## Install
 
 ```kotlin
+// build.gradle.kts
 dependencies {
     implementation("com.shegerpay:sdk-kotlin:2.2.0")
 }
 ```
 
-Or with Groovy `build.gradle`:
-
-```groovy
-dependencies {
-    implementation 'com.shegerpay:sdk-kotlin:2.2.0'
-}
-```
-
 ## Quick Start
-
-The SDK is built with Kotlin coroutines for non-blocking async operations:
 
 ```kotlin
 import com.shegerpay.ShegerPay
-import kotlinx.coroutines.runBlocking
 
-fun main() = runBlocking {
-    val client = ShegerPay("sk_live_...")
+val client = ShegerPay("sk_live_YOUR_API_KEY")
 
-    val response = client.verify("txn_abc123")
+// In a coroutine or suspend function:
 
-    if (response.isSuccess) {
-        println("Payment verified: ${response.transactionId}")
-        println("Amount: ${response.amount}")
-    } else {
-        println("Verification failed: ${response.message}")
-    }
-}
+// Verify a payment
+val result = client.verify("FT26062K7WMY", provider = "cbe", amount = 1000.0)
+println(result["verified"]) // true/false
+
+// Verify without amount (lookup only)
+val result2 = client.verify("FT26062K7WMY", provider = "telebirr")
+println(result2["status"])
+
+// Verify from receipt screenshot
+val imageBase64 = Base64.getEncoder().encodeToString(File("receipt.png").readBytes())
+val imgResult = client.verifyImage(imageBase64, provider = "cbe")
+println(imgResult["verified"])
+
+// Create payment link
+val link = client.createPaymentLink(mapOf(
+    "title" to "Order #1234",
+    "amount" to 1500,
+    "currency" to "ETB"
+))
+println(link["url"])
 ```
 
-In an existing coroutine scope (e.g. Android ViewModel):
-
+**In an Android ViewModel:**
 ```kotlin
 viewModelScope.launch {
-    val response = shegerPayClient.verify(transactionId)
-    // handle response
+    val result = client.verify(transactionId, provider = "cbe", amount = amount)
+    if (result["verified"] == true) { /* success */ }
 }
 ```
 
-## API Reference
-
-### `ShegerPay(apiKey: String)`
-
-Creates a new ShegerPay client.
-
-| Parameter | Type   | Description        |
-|-----------|--------|--------------------|
-| `apiKey`  | String | Your secret API key |
-
-### `suspend fun verify(transactionId: String): VerifyResponse`
-
-Suspending function that verifies a payment transaction.
-
-| Parameter       | Type   | Description              |
-|-----------------|--------|--------------------------|
-| `transactionId` | String | The transaction ID to verify |
-
-Returns a `VerifyResponse` data class with:
-- `isSuccess: Boolean` — whether the payment was successful
-- `transactionId: String` — the transaction ID
-- `amount: Long` — the verified amount in cents
-- `message: String` — status message
+## Supported Providers
+`cbe` · `telebirr` · `boa` · `awash` · `ebirr_kaafi` · `ebirr_coop`
 
 ## Requirements
-
 - Kotlin 1.8+
-- Kotlin Coroutines (`kotlinx-coroutines-core`)
-- Android minSdk 21+ or JVM 11+
+- Kotlin Coroutines
 
-## License
 
-MIT — see [LICENSE](LICENSE)
+## Support
+- 📚 Docs: https://shegerpay.com/docs
+- 💬 Telegram: [@shegerpay_0](https://t.me/shegerpay_0)
+- 📧 Email: support@shegerpay.com
